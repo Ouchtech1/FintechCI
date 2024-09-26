@@ -24,3 +24,11 @@ jobs:
     - name: Exécuter les tests unitaires
       run: |
         python -m unittest discover tests
+    - name: Vérifier la qualité du code avec Flake8
+      run: |
+          flake8 .
+    - name: Analyser le code pour les vulnérabilités avec Bandit
+      run: |
+          bandit -r .
+                  
+      
