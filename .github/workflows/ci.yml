@@ -43,6 +43,11 @@ jobs:
             run: |
               docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }} .
               docker push ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }}
-                    
+              
+          - name: Exécuter les tests unitaires avec couverture
+            run: |
+             coverage run -m unittest discover tests
+             coverage report
+          
                   
       
