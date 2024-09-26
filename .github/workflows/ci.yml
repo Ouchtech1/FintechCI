@@ -30,5 +30,9 @@ jobs:
     - name: Analyser le code pour les vulnérabilités avec Bandit
       run: |
           bandit -r .
+          - name: Construire l'image Docker
+          run: |
+            docker build -t fintech-app .
+              
                   
       
