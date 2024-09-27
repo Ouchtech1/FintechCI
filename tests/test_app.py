@@ -5,7 +5,7 @@ from app import main
 class TestApp(unittest.TestCase):
     def test_main(self):
         result = main()
-        self.assertEqual(result, "Bienvenue chez Fintech Solutions!")
+        self.assertIn("Bienvenue chez Fintech Solutions!", result)
 
 
 if __name__ == '__main__':

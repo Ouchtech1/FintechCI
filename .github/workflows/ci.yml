@@ -75,3 +75,31 @@ jobs:
         service: your-ecs-service-name
         cluster: your-ecs-cluster-name
         wait-for-service-stability: true
+
+    - name: Déployer sur Kubernetes
+      uses: azure/k8s-deploy@v3
+      with:
+        manifests: |
+          deployment.yaml
+          service.yaml
+        images: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }}
+        namespace: default
+
+    - name: Notifier Slack en cas de succès
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,ref,workflow,job,took
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notifier Slack en cas d'échec
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,ref,workflow,job,took
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
