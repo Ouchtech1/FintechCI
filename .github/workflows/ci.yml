@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -13,41 +13,65 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Configurer Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.8'
+
     - name: Installer les dépendances
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Exécuter les tests unitaires
-      run: |
-        python -m unittest discover tests
+
     - name: Vérifier la qualité du code avec Flake8
       run: |
-          flake8 .
+        flake8 .
+
     - name: Analyser le code pour les vulnérabilités avec Bandit
       run: |
-          bandit -r .
-          - name: Construire l'image Docker
-          run: |
-            docker build -t fintech-app .
-            - name: Connexion à Docker Hub
-            uses: docker/login-action@v2
-            with:
-              username: ${{ secrets.DOCKERHUB_USERNAME }}
-              password: ${{ secrets.DOCKERHUB_TOKEN }}
-          
-          - name: Construire et pousser l'image Docker
-            run: |
-              docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }} .
-              docker push ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }}
-              
-          - name: Exécuter les tests unitaires avec couverture
-            run: |
-             coverage run -m unittest discover tests
-             coverage report
-          
-                  
-      
+        bandit -r .
+
+    - name: Exécuter les tests unitaires avec couverture
+      run: |
+        coverage run -m unittest discover tests
+        coverage report
+
+    - name: Exécuter les tests de performance
+      run: |
+        locust -f load_test.py --headless -u 100 -r 10 --run-time 1m
+
+    - name: Construire l'image Docker
+      run: |
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }} .
+
+    - name: Connexion à Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Pousser l'image Docker
+      run: |
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/fintech-app:${{ github.sha }}
+
+    - name: Configurer AWS
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Appliquer la configuration Terraform
+      run: |
+        cd terraform
+        terraform init
+        terraform apply -auto-approve
+
+    - name: Déployer sur ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: path/to/your/task-definition.json
+        service: your-ecs-service-name
+        cluster: your-ecs-cluster-name
+        wait-for-service-stability: true
